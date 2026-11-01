@@ -197,7 +197,7 @@ async function prepareWorkspaceInternal(session: Session): Promise<void> {
 }
 
 export function prepareWorkspace(session: Session): Promise<void> {
-  if (session.taskIntent !== "repository_task") return Promise.resolve();
+  if (!session.sandboxId || session.taskIntent !== "repository_task") return Promise.resolve();
   const job = prepareWorkspaceInternal(session);
   workspaceJobs.set(session.id, job);
   return job.finally(() => {
@@ -211,6 +211,9 @@ router.post("/:sessionId/preview", async (req, res) => {
   if (!session) return;
 
   try {
+    if (!session.sandboxId) {
+      return res.status(400).json({ error: "This session has no workspace sandbox." });
+    }
     const config = await getRepoConfig(
       session.installationId,
       session.repoFullName,
@@ -309,7 +312,7 @@ router.delete("/:sessionId", async (req, res) => {
   setStatus(session, "stopped");
 
   try {
-    await Sandbox.kill(session.sandboxId);
+    if (session.sandboxId) await Sandbox.kill(session.sandboxId);
   } catch {
   }
 

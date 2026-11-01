@@ -362,6 +362,7 @@ export function subscribeToSession(
       status: SessionStatus;
       prUrl?: string;
       branch?: string;
+      sandboxId?: string;
     }) => void;
     onError?: (err: Error) => void;
   },

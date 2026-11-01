@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { Octokit } from "octokit";
 import type { Request, Response } from "express";
 import { Sandbox } from "e2b";
-import { getSession } from "./sessions";
+import { getSession, saveSession, log } from "./sessions";
 import type { Session } from "./sessions";
 import { posix as pathPosix } from "node:path";
 
@@ -298,6 +298,66 @@ export async function connectSessionSandbox(
   return sandbox;
 }
 
+
+export async function createSessionSandbox(
+  installationId: string,
+  repoFullName: string,
+): Promise<Sandbox> {
+  const token = await getInstallationToken(installationId);
+  const sandboxTemplate = process.env.E2B_TEMPLATE?.trim();
+  const sandboxOptions = {
+    timeoutMs: 30 * 60 * 1000,
+    lifecycle: { onTimeout: "pause" as const, autoResume: true },
+  };
+  const sandbox = sandboxTemplate
+    ? await Sandbox.create(sandboxTemplate, sandboxOptions)
+    : await Sandbox.create(sandboxOptions);
+  try {
+    await sandbox.commands.run(
+      `git clone https://x-access-token:${token}@github.com/${repoFullName}.git repo`,
+      { timeoutMs: 120_000 },
+    );
+    // The sandbox is user-visible through its terminal. Never leave the
+    // installation credential in the cloned repository's .git/config.
+    await sandbox.commands.run(
+      `git -C repo remote set-url origin ${quoteShell(`https://github.com/${repoFullName}.git`)}`,
+      { timeoutMs: 10_000 },
+    );
+    return sandbox;
+  } catch (err: any) {
+    await sandbox.kill().catch(() => {});
+    throw new Error(
+      `git clone failed: ${String(err.stderr ?? err.message)
+        .split(token)
+        .join("***")}`,
+    );
+  }
+}
+
+export async function ensureSessionSandbox(
+  session: Session,
+): Promise<Sandbox> {
+  if (session.sandboxId) {
+    try {
+      return await connectSessionSandbox(session.sandboxId);
+    } catch (err) {
+      if (!isSandboxNotFoundError(err)) {
+        throw err;
+      }
+      log(session, "info", "Previous workspace sandbox expired. Re-creating sandbox...");
+    }
+  }
+
+  log(session, "info", `Starting workspace sandbox for ${session.repoFullName}...`);
+  const sandbox = await createSessionSandbox(
+    session.installationId,
+    session.repoFullName,
+  );
+  session.sandboxId = sandbox.sandboxId;
+  await saveSession(session);
+  log(session, "info", "Workspace sandbox is ready.");
+  return sandbox;
+}
 export function quoteShell(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }

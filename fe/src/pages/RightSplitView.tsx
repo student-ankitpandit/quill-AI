@@ -23,6 +23,8 @@ import {
   Terminal,
 } from "lucide-react";
 import { navigate } from "@/lib/router";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   getSession,
   getConfiguredModelName,
@@ -47,10 +49,10 @@ import type { SessionSummary } from "./apiPage";
 
 type WorkspacePanel = "files" | "changes" | "terminal" | "side-chat" | "progress";
 
-const panels: { id: WorkspacePanel; label: string; description: string; icon: typeof Files }[] = [
-  { id: "files", label: "Files", description: "Browse the session workspace", icon: Files },
-  { id: "changes", label: "Changes", description: "See the agent's file edits", icon: GitPullRequest },
-  { id: "terminal", label: "Terminal", description: "Commands and output", icon: Terminal },
+const allPanels: { id: WorkspacePanel; label: string; description: string; icon: typeof Files; requiresSandbox?: boolean }[] = [
+  { id: "files", label: "Files", description: "Browse the session workspace", icon: Files, requiresSandbox: true },
+  { id: "changes", label: "Changes", description: "See the agent's file edits", icon: GitPullRequest, requiresSandbox: true },
+  { id: "terminal", label: "Terminal", description: "Commands and output", icon: Terminal, requiresSandbox: true },
   { id: "side-chat", label: "Side chat", description: "Ask a follow-up question", icon: MessageCircle },
   { id: "progress", label: "Progress", description: "Understand the agent's work", icon: Activity },
 ];
@@ -249,7 +251,12 @@ export function RightSplitViewPage({ sessionId }: { sessionId: string }) {
       onStatus: (update) => {
         if (stopRequestedRef.current && update.status === "running") return;
         setStatus(update.status);
-        setSession((current) => current ? { ...current, prUrl: update.prUrl ?? current.prUrl, branch: update.branch ?? current.branch } : current);
+        setSession((current) => current ? {
+          ...current,
+          prUrl: update.prUrl ?? current.prUrl,
+          branch: update.branch ?? current.branch,
+          sandboxId: update.sandboxId ?? current.sandboxId,
+        } : current);
       },
       onError: (streamError) => setError(streamError.message),
     });
@@ -497,7 +504,7 @@ export function RightSplitViewPage({ sessionId }: { sessionId: string }) {
             <button aria-label="Back to dashboard" onClick={() => navigate({ page: "dashboard" })} className="rounded-lg p-2 text-neutral-400 hover:bg-white/10 hover:text-white"><ArrowLeft size={18} /></button>
             <div className="min-w-0"><h1 className="truncate text-sm font-semibold">{session.title || "New session"}</h1><p className="mt-1 truncate text-xs text-neutral-500">{session.repoFullName}</p></div>
             <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 px-2.5 py-1 text-xs text-neutral-300">
-              {status === "done" && <i aria-hidden="true" className="size-1.5 rounded-full bg-emerald-400" />}
+              <i aria-hidden="true" className={`qw-header-status-dot status-${status}`} />
               {statusLabel[status]}
             </span>
             {loading && <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-neutral-400"><LoaderCircle size={13} className="animate-spin text-orange-400" /> Switching…</span>}
@@ -522,7 +529,7 @@ export function RightSplitViewPage({ sessionId }: { sessionId: string }) {
                 {chatMessages.map((item: any, index: number) => item.role === "user" ? (
                   <div key={`${index}-${item.role}`} className="qw-user-row flex justify-end"><div className="qw-user-bubble max-w-[82%] rounded-2xl bg-[#202020] px-5 py-3 text-[15px] leading-6 text-neutral-100 whitespace-pre-wrap">{item.content}</div></div>
                 ) : (
-                  <article key={`${index}-${item.role}`} className="qw-assistant-message max-w-[92%] whitespace-pre-wrap text-[15px] leading-7 text-neutral-200">{item.content}</article>
+                  <article key={`${index}-${item.role}`} className="qw-assistant-message max-w-[92%] text-[15px] leading-7 text-neutral-200"><ReactMarkdown remarkPlugins={[remarkGfm]}>{item.content}</ReactMarkdown></article>
                 ))}
                 {status === "running" && <div className="flex items-center gap-2 text-sm text-neutral-500"><LoaderCircle size={15} className="animate-spin" /> Quill is working…</div>}
                 {(status === "done" || status === "error") && !hasAssistantReply && <article className="max-w-[92%] rounded-xl border border-white/10 bg-[#151515] p-4 text-sm leading-6 text-neutral-400">This session has no saved reply. <button onClick={() => void retryMissingAnswer()} disabled={retryingAnswer} className="ml-1 text-orange-400 hover:text-orange-300 disabled:opacity-50">{retryingAnswer ? "Asking Quill…" : "Ask Quill to answer"}</button></article>}
@@ -542,7 +549,7 @@ export function RightSplitViewPage({ sessionId }: { sessionId: string }) {
           <aside className="qw-tools hidden w-[300px] shrink-0 flex-col border-l border-white/10 bg-[#141414] xl:flex">
             {panel === null ? (
               <nav className="qw-tool-launcher" aria-label="Session workspace tools">
-                {panels.map(({ id, label, description, icon: Icon }) => (
+                {allPanels.map(({ id, label, description, icon: Icon }) => (
                   <button key={id} onClick={() => { setPanel(id); if (id === "side-chat") composerRef.current?.focus(); }} className="qw-tool-item">
                     <span className="qw-tool-icon"><Icon size={18} strokeWidth={1.8} /></span>
                     <span className="qw-tool-copy"><span className="qw-tool-label">{label}</span><span className="qw-tool-description">{description}</span></span>
@@ -553,7 +560,7 @@ export function RightSplitViewPage({ sessionId }: { sessionId: string }) {
               <>
                 <header className="qw-tools-bar">
                   <button onClick={() => setPanel(null)} aria-label="Back to workspace tools"><ArrowLeft size={16} /> Workspace</button>
-                  <span>{panels.find(({ id }) => id === panel)?.label}</span>
+                  <span>{allPanels.find(({ id }) => id === panel)?.label}</span>
                 </header>
                 <div className="qw-tools-detail">
               {panel === "files" && <div className="flex h-full min-h-0 flex-col gap-3">

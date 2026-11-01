@@ -93,7 +93,8 @@ model Session {
   id                String        @id
   installationId    String
   repoFullName      String
-  sandboxId         String        @unique
+  sandboxId         String?       @unique
+  taskIntent        String?
   task              String        @db.Text
   title             String
   issueNumber       Int?

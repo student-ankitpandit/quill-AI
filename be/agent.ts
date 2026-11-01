@@ -4,6 +4,7 @@ import type { Session } from "./sessions";
 import { saveSession, log, setStatus, redactSensitiveText } from "./sessions";
 import {
   connectSessionSandbox,
+  ensureSessionSandbox,
   getInstallationToken,
   getInstallationOctokit,
   isSandboxNotFoundError,
@@ -72,11 +73,11 @@ const SYSTEM_PROMPT =
   "You are an agent that can answer questions and make requested code changes. " +
   `When asked which AI model is running, say Quill is currently using ${MODEL_DISPLAY_NAME} (configured model ID: ${MODEL}). Do not guess or claim a different model or version. ` +
   "For a greeting, acknowledgement, social message, or other casual message that does not ask for repository work, reply conversationally and ask how you can help if appropriate. Do not inspect or change the repository, claim repository work was done, or mention commits, pushes, or pull requests for these messages. " +
-  "For a straightforward informational question, answer it directly in plain language. Do not call tools, inspect or change files, start services, or create a pull request for an informational question. " +
+  "For a straightforward question that does not require looking at code, answer it directly. If the answer depends on the actual code in the repository, use read_file to look it up rather than guessing. " +
   "For repository-specific questions, use the repository name and conversation context; be clear about uncertainty instead of inventing details you cannot know without inspection. " +
   "Never claim that changes are on GitHub based on a local git commit. Quill publishes and verifies changes after your response; do not run git push yourself. " +
   "Never merge a pull request automatically. Quill asks the user to review the PR and only merges after the user explicitly confirms through the Merge PR action. " +
-  "Use repository tools only when the user explicitly asks you to inspect or change the code. " +
+  "Use repository tools whenever they would produce a more accurate or complete response — reading files, running commands, or making changes. Always prefer looking at actual code over guessing. " +
   "If a code task is blocked on information you cannot find yourself, use ask_user.";
 
 export async function classifyUserIntent(text: string): Promise<UserIntent> {
@@ -613,6 +614,7 @@ export async function runAgent(session: Session, parentSignal?: AbortSignal) {
   }
   try {
     let sandbox: Sandbox | null = null;
+    let sandboxPromise: Promise<Sandbox> | null = null;
     let summary = "";
     let finished = false;
     let finalTurnIsRepositoryTask = false;
@@ -654,6 +656,16 @@ export async function runAgent(session: Session, parentSignal?: AbortSignal) {
         classifiedUserText = userText;
       }
       finalTurnIsRepositoryTask = userIntent === "repository_task";
+      // If this is a repository task and no sandbox exists yet, begin provisioning
+      // it in the background immediately — in parallel with the LLM call — so that
+      // by the time the model responds (and possibly calls ask_user to gather more
+      // info), the sandbox is already being prepared and will be ready sooner.
+      if (userIntent === "repository_task" && !session.sandboxId && !sandboxPromise) {
+        sandboxPromise = ensureSessionSandbox(session);
+        // Swallow errors here; they will surface again when we await the promise
+        // at the point where the sandbox is actually needed.
+        sandboxPromise.catch(() => {});
+      }
 
       if (userIntent === "conversation") {
         const queuedMessages = await takeQueuedMessages(session.id);
@@ -687,7 +699,10 @@ export async function runAgent(session: Session, parentSignal?: AbortSignal) {
               },
               ...session.messages,
             ],
-            ...(finalTurnIsRepositoryTask
+            // Always provide tools for non-conversation intents so the LLM can
+            // use read_file / run_command whenever the user's question requires
+            // looking at actual code, regardless of how the intent was classified.
+            ...(userIntent !== "conversation"
               ? {
                   tools,
                   tool_choice: "auto" as const,
@@ -775,7 +790,7 @@ export async function runAgent(session: Session, parentSignal?: AbortSignal) {
           `${toolCall.function.name} ${toolCall.function.arguments}`,
         ),
       );
-      sandbox ??= await connectSessionSandbox(session.sandboxId);
+      sandbox ??= await (sandboxPromise ?? ensureSessionSandbox(session));
       repositoryToolsExecuted = true;
       const output = redactSensitiveText(
         await executeTool(sandbox, toolCall.function.name, args, signal),
@@ -824,7 +839,7 @@ export async function runAgent(session: Session, parentSignal?: AbortSignal) {
         });
         await saveSession(session);
       }
-      sandbox ??= await connectSessionSandbox(session.sandboxId);
+      sandbox ??= await (sandboxPromise ?? ensureSessionSandbox(session));
       publishingChanges = true;
       const published = await publishChanges(sandbox, session, summary, signal);
       publishingChanges = false;

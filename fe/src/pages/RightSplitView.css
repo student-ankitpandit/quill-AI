@@ -199,6 +199,31 @@
   border-radius: 50%;
 }
 
+.quill-workspace .qw-header-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background-color: #737373;
+}
+
+.quill-workspace .qw-header-status-dot.status-done {
+  background-color: #34d399;
+}
+
+.quill-workspace .qw-header-status-dot.status-running {
+  background-color: #fb923c;
+}
+
+.quill-workspace .qw-header-status-dot.status-waiting_for_input {
+  background-color: #facc15;
+}
+
+.quill-workspace .qw-header-status-dot.status-error {
+  background-color: #f87171;
+}
+
 .quill-workspace .qw-session-copy {
   display: flex !important;
   flex-direction: column !important;
@@ -327,9 +352,77 @@
   color: #e1e1e4;
   font-size: 15px;
   line-height: 1.68;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Markdown prose styles inside assistant messages */
+.quill-workspace .qw-assistant-message p { margin: 0.45em 0; }
+.quill-workspace .qw-assistant-message p:first-child { margin-top: 0; }
+.quill-workspace .qw-assistant-message p:last-child { margin-bottom: 0; }
+.quill-workspace .qw-assistant-message ul,
+.quill-workspace .qw-assistant-message ol {
+  padding-left: 1.4em;
+  margin: 0.45em 0;
+}
+.quill-workspace .qw-assistant-message li { margin: 0.2em 0; }
+.quill-workspace .qw-assistant-message h1,
+.quill-workspace .qw-assistant-message h2,
+.quill-workspace .qw-assistant-message h3 {
+  font-weight: 600;
+  margin: 0.8em 0 0.35em;
+  color: #f0f0f3;
+}
+.quill-workspace .qw-assistant-message h1 { font-size: 1.2em; }
+.quill-workspace .qw-assistant-message h2 { font-size: 1.1em; }
+.quill-workspace .qw-assistant-message h3 { font-size: 1em; }
+.quill-workspace .qw-assistant-message code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.83em;
+  background: rgba(255,255,255,0.07);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.quill-workspace .qw-assistant-message pre {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+.quill-workspace .qw-assistant-message pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.8em;
+  line-height: 1.55;
+}
+.quill-workspace .qw-assistant-message blockquote {
+  border-left: 3px solid rgba(255,255,255,0.15);
+  padding-left: 0.85em;
+  color: #9a9aa8;
+  margin: 0.5em 0;
+}
+.quill-workspace .qw-assistant-message strong { color: #f0f0f3; font-weight: 600; }
+.quill-workspace .qw-assistant-message a { color: #f97316; text-decoration: underline; }
+.quill-workspace .qw-assistant-message hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin: 0.8em 0;
+}
+.quill-workspace .qw-assistant-message table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88em;
+  margin: 0.6em 0;
+}
+.quill-workspace .qw-assistant-message th,
+.quill-workspace .qw-assistant-message td {
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 5px 10px;
+  text-align: left;
+}
+.quill-workspace .qw-assistant-message th { background: rgba(255,255,255,0.05); font-weight: 600; }
+
 
 .quill-workspace .qw-message-list details {
   padding: 12px 14px;

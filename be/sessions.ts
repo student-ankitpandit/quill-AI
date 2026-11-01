@@ -60,7 +60,8 @@ function fromPrismaSession(row: any): Session {
     id: row.id,
     installationId: row.installationId,
     repoFullName: row.repoFullName,
-    sandboxId: row.sandboxId,
+    sandboxId: row.sandboxId ?? "",
+    taskIntent: (row.taskIntent as Session["taskIntent"]) ?? undefined,
     task: row.task,
     title: row.title,
     issueNumber: row.issueNumber ?? undefined,
@@ -103,7 +104,7 @@ export function setStatus(session: Session, status: Session["status"]) {
   session.status = status;
   publish(session.id, {
     type: "status",
-    data: { status, prUrl: session.prUrl, branch: session.branch },
+    data: { status, prUrl: session.prUrl, branch: session.branch, sandboxId: session.sandboxId || undefined },
   });
 }
 
@@ -111,7 +112,8 @@ export async function saveSession(session: Session, consumedQueueMessageIds: str
   const sessionData = {
     installationId: session.installationId,
     repoFullName: session.repoFullName,
-    sandboxId: session.sandboxId,
+    sandboxId: session.sandboxId || null,
+    taskIntent: session.taskIntent ?? null,
     task: session.task,
     title: session.title,
     issueNumber: session.issueNumber ?? null,

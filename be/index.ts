@@ -44,6 +44,7 @@ import sessionRoutes, { prepareWorkspace } from "./routes/session";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import {
   connectSessionSandbox,
+  createSessionSandbox,
   isSandboxNotFoundError,
   loadOwned,
 } from "./lib";
@@ -962,35 +963,35 @@ app.post("/api/app/sessions", async (req, res) => {
     }
 
     const taskIntent = await classifyUserIntent(task);
-    const token = await getInstallationToken(installationId);
 
-    const sandboxTemplate = process.env.E2B_TEMPLATE?.trim();
-    const sandboxOptions = {
-      timeoutMs: 30 * 60 * 1000,
-      lifecycle: { onTimeout: "pause" as const, autoResume: true },
-    };
-    const sandbox = sandboxTemplate
-      ? await Sandbox.create(sandboxTemplate, sandboxOptions)
-      : await Sandbox.create(sandboxOptions);
-    try {
-      await sandbox.commands.run(
-        `git clone https://x-access-token:${token}@github.com/${repoFullName}.git repo`,
-        { timeoutMs: 120_000 },
-      );
-      // The sandbox is user-visible through its terminal. Never leave the
-      // installation credential in the cloned repository's .git/config.
-      await sandbox.commands.run(
-        `git -C repo remote set-url origin ${quoteShell(`https://github.com/${repoFullName}.git`)}`,
-        { timeoutMs: 10_000 },
-      );
-    } catch (err: any) {
-      await sandbox.kill().catch(() => {});
-      throw new Error(
-        `git clone failed: ${String(err.stderr ?? err.message)
-          .split(token)
-          .join("***")}`,
-      );
+    // For pure conversation intents (greetings, questions, etc.) skip the
+    // expensive sandbox creation and git clone — the agent won't need repo
+    // access and will respond immediately via a plain LLM call.
+    if (taskIntent === "conversation") {
+      const session: Session = {
+        id: randomUUID(),
+        installationId,
+        repoFullName,
+        sandboxId: "", // no sandbox needed for conversation
+        task,
+        taskIntent,
+        title,
+        issueNumber,
+        status: "ready",
+        createdAt: new Date().toISOString(),
+        messages: [{ role: "user", content: task }],
+        logs: [],
+        repoPath: "/home/user/repo",
+        previewStarted: false,
+      };
+      setStatus(session, "running");
+      await saveSession(session);
+      res.status(201).json(session);
+      void runAgent(session);
+      return;
     }
+
+    const sandbox = await createSessionSandbox(installationId, repoFullName);
 
     const session: Session = {
       id: randomUUID(),
@@ -1074,7 +1075,8 @@ app.get("/api/sessions/:sessionId", async (req, res) => {
 
     let gitDiff = "";
 
-    try {
+    if (session.sandboxId) {
+      try {
         const sandbox = await connectSessionSandbox(session.sandboxId);
         const diffResult = await sandbox.commands.run(
           "git -C repo add -N . && git -C repo diff HEAD",
@@ -1084,7 +1086,7 @@ app.get("/api/sessions/:sessionId", async (req, res) => {
         );
 
         gitDiff = diffResult.stdout.slice(0, 200_000);
-    } catch (error) {
+      } catch (error) {
         if (isSandboxNotFoundError(error)) {
           return res.json({
             ...session,
@@ -1098,6 +1100,7 @@ app.get("/api/sessions/:sessionId", async (req, res) => {
           "Could not load session changes:",
           error instanceof Error ? error.message : String(error),
         );
+      }
     }
 
     return res.json({
@@ -1115,6 +1118,7 @@ app.get("/api/sessions/:sessionId", async (req, res) => {
 app.get("/api/app/sessions/:sessionId/workspace/files", async (req, res) => {
   const session = await loadOwned(req, res);
   if (!session) return;
+  if (!session.sandboxId) return res.json({ entries: [] });
   try {
     const { relative, absolute } = workspacePath(req.query.path);
     const sandbox = await connectSessionSandbox(session.sandboxId);
@@ -1159,6 +1163,7 @@ app.get("/api/app/sessions/:sessionId/workspace/files", async (req, res) => {
 app.get("/api/app/sessions/:sessionId/workspace/file", async (req, res) => {
   const session = await loadOwned(req, res);
   if (!session) return;
+  if (!session.sandboxId) return res.status(404).json({ error: "Workspace is not initialized yet." });
   try {
     const { relative, absolute } = workspacePath(req.query.path);
     if (!relative)
@@ -1221,6 +1226,8 @@ app.put("/api/app/sessions/:sessionId/workspace/file", async (req, res) => {
     const { relative, absolute } = workspacePath(req.body.path);
     if (!relative)
       return res.status(400).json({ error: "Choose a file to save." });
+    if (!session.sandboxId)
+      return res.status(400).json({ error: "Workspace is not initialized yet." });
     const sandbox = await connectSessionSandbox(session.sandboxId);
     const realPath = await assertWorkspacePathInside(sandbox, absolute);
     const base64 = Buffer.from(req.body.content, "utf8").toString("base64");
@@ -1246,6 +1253,7 @@ app.put("/api/app/sessions/:sessionId/workspace/file", async (req, res) => {
 app.get("/api/app/sessions/:sessionId/changes", async (req, res) => {
   const session = await loadOwned(req, res);
   if (!session) return;
+  if (!session.sandboxId) return res.json({ diff: "" });
   try {
     const sandbox = await connectSessionSandbox(session.sandboxId);
     const result = await sandbox.commands.run(
@@ -1270,6 +1278,7 @@ app.get("/api/app/sessions/:sessionId/changes", async (req, res) => {
 app.post("/api/app/sessions/:sessionId/terminal/start", async (req, res) => {
   const session = await loadOwned(req, res);
   if (!session) return;
+  if (!session.sandboxId) return res.status(409).json({ error: "Workspace terminal will be available once repository work starts." });
   try {
     const sandbox = await connectSessionSandbox(session.sandboxId);
     const existingPid = await getTerminalPid(session.id);
