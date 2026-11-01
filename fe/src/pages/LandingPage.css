@@ -72,6 +72,19 @@
   letter-spacing: -.055em;
 }
 
+.home-beta-tag {
+  margin-left: 1px;
+  padding: 3px 6px;
+  border: 1px solid rgba(255, 137, 31, .3);
+  border-radius: 999px;
+  color: #f97316;
+  background: rgba(255, 137, 31, .1);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .04em;
+}
+
 .home-brand-mark {
   width: 30px;
   height: 30px;
