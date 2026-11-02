@@ -72,8 +72,14 @@
   letter-spacing: -.055em;
 }
 
+.home-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 .home-beta-tag {
-  margin-left: 1px;
   padding: 3px 6px;
   border: 1px solid rgba(255, 137, 31, .3);
   border-radius: 999px;

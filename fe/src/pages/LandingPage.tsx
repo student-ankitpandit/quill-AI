@@ -101,13 +101,17 @@ export function LandingPage() {
       <div className="home-orb home-orb-a" aria-hidden="true" />
       <div className="home-orb home-orb-b" aria-hidden="true" />
       <nav className="home-nav">
-        <a className="home-brand" href="/" aria-label="quill beta home">
-          <span className="home-brand-mark">
-            <QuillMark size={19} />
+        <div className="home-brand-lockup">
+          <a className="home-brand" href="/" aria-label="quill home">
+            <span className="home-brand-mark">
+              <QuillMark size={19} />
+            </span>
+            <span>quill</span>
+          </a>
+          <span className="home-beta-tag">
+            Beta
           </span>
-          <span>quill</span>
-          <span className="home-beta-tag">Beta</span>
-        </a>
+        </div>
         <div className="home-nav-links">
           <a href="#workflow">How it works</a>
           <a href="#features">Features</a>
