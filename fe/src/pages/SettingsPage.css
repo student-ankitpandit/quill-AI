@@ -113,6 +113,7 @@
 .settings-helper-copy { margin: 13px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .settings-billing-summary > .settings-billing-cycle-note { margin: 12px 0 0; }
 .settings-primary-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; text-decoration: none; }
+.settings-plan-options { display: flex; flex-wrap: wrap; gap: 10px; }
 .settings-plan-status { margin-left: auto; padding: 5px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; text-transform: capitalize; }
 .settings-plan-status.active { border-color: color-mix(in srgb, #35c98a 30%, var(--line)); color: #2aa875; background: color-mix(in srgb, #35c98a 9%, transparent); }
 .settings-billing-meta { display: flex; justify-content: space-between; gap: 20px; padding: 13px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
