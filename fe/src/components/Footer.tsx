@@ -42,12 +42,6 @@ export function SiteFooter() {
         </div>
         <div className="site-footer-bottom">
           <span>© {new Date().getFullYear()} quill. All rights reserved.</span>
-          <span>
-            Built by{" "}
-            <a href="https://x.com/ankitpanditdev" target="_blank" rel="noreferrer">
-              @ankitpanditdev
-            </a>
-          </span>
         </div>
       </footer>
       <div className="site-footer-watermark" aria-hidden="true">quill</div>
