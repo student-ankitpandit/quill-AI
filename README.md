@@ -4,9 +4,7 @@
 
 <h1 align="center">Quill AI</h1>
 
-Quill AI is a cloud coding agent. A user chooses a repository, describes a task, and Quill works in an isolated cloud workspace. The dashboard streams the agent's progress and lets the user inspect files, changes, and terminal output. When code work is ready, Quill can publish a branch and open a pull request for the user to review.
-
-This README describes the project as it exists in this repository and explains how to run its frontend and backend locally.
+Quill AI is cloud AI coding agent. A user chooses a github repository, describes a task, and Quill works in an isolated cloud workspace. The dashboard streams the agent's progress and lets the user inspect files, changes, and terminal output. When code work is ready, Quill can publish a branch and open a pull request for the user to review.
 
 ## Contents
 
