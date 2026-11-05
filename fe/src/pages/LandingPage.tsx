@@ -40,6 +40,12 @@ export function LandingPage() {
   const [razorpayOrder, setRazorpayOrder] = useState<Awaited<ReturnType<typeof createRazorpayOrder>> | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<"basic" | "pro" | null>(null);
   const [paymentError, setPaymentError] = useState("");
+  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
+
+  const prices = {
+    INR: { symbol: "₹", free: "0", basic: "799", pro: "1,599" },
+    USD: { symbol: "$", free: "0", basic: "9.49", pro: "18.99" },
+  } as const;
 
   useEffect(() => {
     if (window.location.hash.startsWith("#pricing")) {
@@ -475,6 +481,14 @@ export function LandingPage() {
             <br />
             <span>Keep your work moving.</span>
           </h2>
+          <button
+            type="button"
+            className="currency-toggle"
+            onClick={() => setCurrency(c => c === "INR" ? "USD" : "INR")}
+          >
+            <span className={currency === "INR" ? "currency-active" : ""}>₹ INR</span>
+            <span className={currency === "USD" ? "currency-active" : ""}>$ USD</span>
+          </button>
         </div>
         <div className="pricing-cards">
           <article className="pricing-card" data-scroll-reveal>
@@ -483,7 +497,7 @@ export function LandingPage() {
               Try Quill on a real repository before choosing a paid plan.
             </p>
             <div className="pricing-price">
-              <span className="pricing-currency">₹</span>0
+              <span className="pricing-currency">{prices[currency].symbol}</span>{prices[currency].free}
               <span className="pricing-period">/ free trial</span>
             </div>
             <div className="pricing-price-note">
@@ -505,7 +519,7 @@ export function LandingPage() {
               For everyday repository questions and focused coding tasks.
             </p>
             <div className="pricing-price">
-                <span className="pricing-currency">₹</span>799
+                <span className="pricing-currency">{prices[currency].symbol}</span>{prices[currency].basic}
               <span className="pricing-period">/ 30 days</span>
             </div>
             <div className="pricing-price-note">
@@ -556,7 +570,7 @@ export function LandingPage() {
               For heavier use, bigger projects, and more demanding work.
             </p>
             <div className="pricing-price">
-              <span className="pricing-currency">₹</span>1,599
+              <span className="pricing-currency">{prices[currency].symbol}</span>{prices[currency].pro}
               <span className="pricing-period">/ 30 days</span>
             </div>
             <div className="pricing-price-note">
