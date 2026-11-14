@@ -4,15 +4,15 @@
 
 <h1 align="center">Quill AI</h1>
 
-Quill AI is cloud AI coding agent. A user chooses a github repository, describes a task, and Quill works in an isolated cloud workspace. The dashboard streams the agent's progress and lets the user inspect files, changes, and terminal output. When code work is ready, Quill can publish a branch and open a pull request for the user to review.
+Quill AI is a cloud AI coding agent. A user chooses a GitHub repository, describes a task, and Quill AI works in an isolated cloud workspace. The dashboard streams the agent's progress and lets the user inspect files, changes, and terminal output. When code work is ready, Quill AI can publish a branch and open a pull request for the user to review.
 
 ## Contents
 
-- [What Quill does](#what-quill-does)
+- [What Quill AI does](#what-quill-ai-does)
 - [How the system fits together](#how-the-system-fits-together)
 - [Repository layout](#repository-layout)
 - [Requirements](#requirements)
-- [Run Quill locally](#run-quill-locally)
+- [Run Quill AI locally](#run-quill-ai-locally)
 - [Environment variables](#environment-variables)
 - [Database and Prisma](#database-and-prisma)
 - [GitHub setup](#github-setup)
@@ -24,13 +24,13 @@ Quill AI is cloud AI coding agent. A user chooses a github repository, describes
 - [Troubleshooting](#troubleshooting)
 - [Security notes](#security-notes)
 
-## What Quill does
+## What Quill AI does
 
 - **GitHub sign-in and repository access:** users authenticate with GitHub and install the HelloQuill GitHub App, granting access to all repositories or only the repositories they select.
 - **Coding sessions:** users start a session for a repository and send a task. The backend classifies messages as conversation, informational, or repository work so casual chat does not need to trigger repository actions.
-- **Isolated workspaces:** repository work runs in an E2B sandbox rather than on the user's computer or the Quill web server.
+- **Isolated workspaces:** repository work runs in an E2B sandbox rather than on the user's computer or the Quill AI web server.
 - **Live session view:** the dashboard streams agent messages, status, and activity. It includes workspace files, a changes view, an Ubuntu terminal, side chat, and progress details.
-- **Pull requests:** after repository changes, Quill can publish a branch and create a pull request. Users review the result; merging remains the user's decision and requires their explicit action.
+- **Pull requests:** after repository changes, Quill AI can publish a branch and create a pull request. Users review the result; merging remains the user's decision and requires their explicit action.
 - **Pull request review:** the Review area accepts a GitHub pull request URL and reports a model-generated review, including findings and possible exposed secrets. The GitHub App must be able to access that repository. Binary or otherwise unpatchable files may be omitted from textual diff review.
 - **Plans and usage:** the app currently has a free allowance and paid Basic and Pro plans. Usage is tracked in agent runs, and the backend enforces the plan limits.
 - **Payments:** paid plans use Razorpay checkout and server-side signature/payment verification.
@@ -59,7 +59,7 @@ The frontend calls the local backend at `http://localhost:3001` when the browser
 2. The user selects a repository exposed by that GitHub App installation and submits a task. The backend checks the user's available plan allowance and classifies the request before starting repository work.
 3. For repository work, the backend creates an E2B sandbox, clones the selected repository into the workspace, and starts the GPT-5 agent loop. The agent can inspect or edit the sandbox and run repository commands through its tools.
 4. Messages, status, and activity are persisted in PostgreSQL and streamed to the browser. The workspace panels use authenticated API calls to read files, diffs, terminal output, and side-chat messages.
-5. When requested code work is ready, Quill publishes a branch and opens a pull request. The user reviews the changes in GitHub or in Quill and chooses whether to merge.
+5. When requested code work is ready, Quill AI publishes a branch and opens a pull request. The user reviews the changes in GitHub or in Quill AI and chooses whether to merge.
 
 Conversation or informational messages should not need a repository checkout or publication step. Paid usage is charged against agent runs and the backend enforces the allowance before a new session starts.
 
@@ -113,7 +113,7 @@ The backend route implementation is in `be/index.ts`; session-specific preview a
 - Razorpay credentials to enable paid-plan checkout (optional for local work not involving payments)
 - A Vercel token only if using the optional sandbox deployment feature
 
-## Run Quill locally
+## Run Quill AI locally
 
 The frontend and backend are separate applications. Run each in its own terminal from its directory.
 
@@ -214,10 +214,10 @@ For a local development database, `bun run db:push` applies the current schema d
 
 ## GitHub setup
 
-Quill uses two related GitHub configurations:
+Quill AI uses two related GitHub configurations:
 
 1. **GitHub OAuth App** signs users in. Its client ID and secret are `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Add the backend callback URL to the OAuth App's authorization callback URLs.
-2. **GitHub App** grants repository permissions and performs repository operations on behalf of each installation. Configure its App ID and private key as `GITHUB_APP_ID` and `GITHUB_PRIVATE_KEY`. Users install it and select the repositories Quill may access.
+2. **GitHub App** grants repository permissions and performs repository operations on behalf of each installation. Configure its App ID and private key as `GITHUB_APP_ID` and `GITHUB_PRIVATE_KEY`. Users install it and select the repositories Quill AI may access.
 
 The GitHub App needs the permissions required by the app's operations, including repository metadata/code and pull request access. Keep the App's configured permissions aligned with features such as reading files, creating branches/commits, opening pull requests, and reviewing pull requests. After changing permissions, GitHub may require users to approve the updated installation permissions.
 
@@ -227,13 +227,13 @@ An installation is account-specific. A user who signs in must install the app (o
 
 Repository sessions are created in E2B, using the template ID configured by `E2B_TEMPLATE`. The included `e2b-template/Dockerfile` is based on E2B's code-interpreter image and installs the Vercel CLI for optional deployment actions.
 
-Build/publish the template using the E2B template workflow for your account, then put the resulting template ID in the backend environment. The backend clones the selected repository into `/home/user/repo` in the sandbox. The terminal and preview services operate against that sandbox; the Quill backend itself does not host the user's repository checkout.
+Build/publish the template using the E2B template workflow for your account, then put the resulting template ID in the backend environment. The backend clones the selected repository into `/home/user/repo` in the sandbox. The terminal and preview services operate against that sandbox; the Quill AI backend itself does not host the user's repository checkout.
 
 Sandbox lifetimes are finite. Persisted session records and messages live in PostgreSQL, while the working checkout lives in the sandbox. If a sandbox expires before work is published, its unpushed working-tree changes may no longer be available; users should rely on a pushed branch or pull request for durable code changes.
 
 ## Payments and plans
 
-The backend creates Razorpay orders and verifies the signature and captured payment with Razorpay before activating a subscription. The amount sent to Razorpay is expressed in the currency's minor unit (paisa for INR). Keep the public Razorpay key ID separate from the secret key, and configure test/live credentials consistently between Razorpay and Quill.
+The backend creates Razorpay orders and verifies the signature and captured payment with Razorpay before activating a subscription. The amount sent to Razorpay is expressed in the currency's minor unit (paisa for INR). Keep the public Razorpay key ID separate from the secret key, and configure test/live credentials consistently between Razorpay and Quill AI.
 
 Current backend limits are:
 
@@ -293,7 +293,7 @@ Run commands from the relevant subdirectory.
 
 ## Troubleshooting
 
-### The frontend says it cannot reach Quill's server
+### The frontend says it cannot reach Quill AI's server
 
 - When testing locally, start the backend on port `3001` and the frontend on port `3000`.
 - Check `http://localhost:3001/health`.
@@ -325,12 +325,12 @@ Check `E2B_API_KEY` and `E2B_TEMPLATE`, verify that the template exists in the c
 - Never commit `.env` files, GitHub private keys, OAuth secrets, OpenAI keys, E2B keys, Razorpay secrets, or Vercel tokens.
 - Only variables prefixed with `BUN_PUBLIC_` should be treated as safe to expose in frontend builds. Public key IDs are intended for browser use; private keys and API secrets are not.
 - Grant the GitHub App only the permissions its product features need. Users choose which repositories the installation can access.
-- Review generated changes and pull requests before merging. Quill does not merge a pull request without the user's explicit approval.
+- Review generated changes and pull requests before merging. Quill AI does not merge a pull request without the user's explicit approval.
 - The AI review is an aid to human review, not a guarantee that code is safe, correct, or free of vulnerabilities.
 
 ## Contribution Guidelines
 
-Contributions that improve Quill's reliability, security, accessibility, documentation, or user experience are welcome.
+Contributions that improve Quill AI's reliability, security, accessibility, documentation, or user experience are welcome.
 
 1. **Discuss substantial changes first.** Open an issue or discussion describing the problem, expected behavior, and proposed approach before starting large features or changes to authentication, billing, data storage, or deployment.
 2. **Keep changes focused.** Make one coherent change per pull request where practical. Avoid unrelated formatting or generated-file changes.
