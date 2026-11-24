@@ -412,7 +412,7 @@ export function signUserToken(payload: {
       email: payload.email,
     },
     process.env.GITHUB_PRIVATE_KEY!,
-    { algorithm: "RS256", expiresIn: "7d" },
+    { algorithm: "RS256", expiresIn: "30d" },
   );
 }
 
