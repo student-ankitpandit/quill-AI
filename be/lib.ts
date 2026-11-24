@@ -10,7 +10,6 @@ import { posix as pathPosix } from "node:path";
 const REPO_NAME = /^[\w.-]+\/[\w.-]+$/;
 const REPO_DIR = "/home/user/repo";
 const SAFE = /^[\w-]+$/;
-const publishing = new Set<string>();
 
 type GithubTokenResponse = {
   access_token?: string;
