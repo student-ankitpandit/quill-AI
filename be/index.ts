@@ -68,6 +68,11 @@ const razorpay = new Razorpay({
   });
 
 const app = express();
+
+app.get("/google96d53058af947fe6.html", (_req, res) => {
+  res.type("html").send("google-site-verification: google96d53058af947fe6.html");
+});
+
 app.use(express.json({ limit: "2mb" }));
 
 const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER === "true";
